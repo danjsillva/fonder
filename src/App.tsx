@@ -30,9 +30,9 @@ function App() {
 
   // useEffect para buscar a lista de fontes quando o componente é montado
   useEffect(() => {
-    chrome.runtime.sendMessage({ message: "get_fonts" }, (response) => {
-      if (response && response.fonts) {
-        setFontsList(response.fonts);
+    chrome.runtime.sendMessage({ message: "GET_FONTS" }, (response) => {
+      if (response && response.data) {
+        setFontsList(response.data);
       } else {
         console.log("No fonts found in response", response);
       }
@@ -42,11 +42,11 @@ function App() {
   // useEffect para iniciar/parar a inspeção com base no estado
   useEffect(() => {
     if (isInspecting) {
-      chrome.runtime.sendMessage({ message: "start_observing" }, (response) => {
+      chrome.runtime.sendMessage({ message: "START_OBSERVING" }, (response) => {
         console.log(response?.status); // Logs "Observing started"
       });
     } else {
-      chrome.runtime.sendMessage({ message: "stop_observing" }, (response) => {
+      chrome.runtime.sendMessage({ message: "STOP_OBSERVING" }, (response) => {
         console.log(response?.status); // Logs "Observing stopped"
       });
     }

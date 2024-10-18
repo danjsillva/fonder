@@ -1,16 +1,15 @@
 let highlightedElement = null;
 let isObserving = false;
 
-// Função para destacar o texto com uma cor de marca-texto amarela
 function highlightElement(element) {
   if (highlightedElement) {
-    highlightedElement.style.backgroundColor = ""; // Remove o destaque anterior
+    highlightedElement.style.backgroundColor = "";
   }
+
   highlightedElement = element;
-  highlightedElement.style.backgroundColor = "yellow"; // Adiciona o destaque
+  highlightedElement.style.backgroundColor = "yellow";
 }
 
-// Função para obter as propriedades da fonte do texto sob o mouse
 function getFontPropertiesUnderMouse(event) {
   const element = event.target;
   const style = window.getComputedStyle(element);
@@ -24,54 +23,50 @@ function getFontPropertiesUnderMouse(event) {
     elementText: element.innerText,
   };
 
-  // Destaca o elemento com fundo amarelo
   highlightElement(element);
 
   return fontProperties;
 }
 
-// Função para começar a observar o movimento do mouse
 function startObservingMouse() {
   if (!isObserving) {
     document.addEventListener("mousemove", handleMouseMove);
+
     isObserving = true;
   }
 }
 
-// Função para parar de observar o movimento do mouse
 function stopObservingMouse() {
   if (isObserving) {
     document.removeEventListener("mousemove", handleMouseMove);
+
     isObserving = false;
-    // Remove o destaque do último elemento
+
     if (highlightedElement) {
-      highlightedElement.style.backgroundColor = ""; // Remove o destaque quando parar de observar
+      highlightedElement.style.backgroundColor = "";
       highlightedElement = null;
     }
   }
 }
 
-// Handler para o movimento do mouse
 function handleMouseMove(event) {
   const fontProperties = getFontPropertiesUnderMouse(event);
+
   chrome.runtime.sendMessage({
     message: "font_properties",
     data: fontProperties,
   });
 }
 
-// Função para obter todas as fontes usadas na página
-function getFontsUsedOnPage() {
+function getAllPageFonts() {
   const fonts = new Set();
 
-  // Itera sobre todos os elementos visíveis na página
   document.querySelectorAll("*").forEach((element) => {
     const style = window.getComputedStyle(element);
     const fontFamily = style.fontFamily;
 
-    // Adiciona a fonte se não for uma string vazia
     if (fontFamily && fontFamily !== "inherit") {
-      // Divide as famílias de fontes se houver várias
+      // Split font families if there are multiple
       fontFamily.split(",").forEach((font) => {
         fonts.add(font.trim());
       });
@@ -81,16 +76,26 @@ function getFontsUsedOnPage() {
   return Array.from(fonts);
 }
 
-// Listener para receber mensagens do popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.message === "get_fonts") {
-    const fonts = getFontsUsedOnPage();
-    sendResponse({ fonts });
-  } else if (request.message === "start_observing") {
+  if (request.message === "GET_FONTS") {
+    const fonts = getAllPageFonts();
+
+    sendResponse({ status: "Fonts obtained", data: fonts });
+
+    return;
+  }
+
+  if (request.message === "START_OBSERVING") {
     startObservingMouse();
-    sendResponse({ status: "Observing started" });
-  } else if (request.message === "stop_observing") {
+    sendResponse({ status: "Observing started", data: null });
+
+    return;
+  }
+
+  if (request.message === "STOP_OBSERVING") {
     stopObservingMouse();
-    sendResponse({ status: "Observing stopped" });
+    sendResponse({ status: "Observing stopped", data: null });
+
+    return;
   }
 });
