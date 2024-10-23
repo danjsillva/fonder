@@ -1,30 +1,6 @@
 import { useState, useEffect } from "react";
 
-// Definição das interfaces
-interface FontProperties {
-  fontFamily: string;
-  fontSize: string;
-  fontWeight: string;
-  lineHeight: string;
-  color: string;
-  elementText: string;
-}
-
-interface FontMessage {
-  message: "font_properties";
-  data: FontProperties;
-}
-
 function App() {
-  const [fontProperties, setFontProperties] = useState<FontProperties>({
-    fontFamily: "",
-    fontSize: "",
-    fontWeight: "",
-    lineHeight: "",
-    color: "",
-    elementText: "",
-  });
-
   const [fontsList, setFontsList] = useState<string[]>([]);
   const [isInspecting, setIsInspecting] = useState(false);
 
@@ -39,32 +15,26 @@ function App() {
     });
   }, []);
 
-  // useEffect para iniciar/parar a inspeção com base no estado
   useEffect(() => {
-    if (isInspecting) {
-      chrome.runtime.sendMessage({ message: "START_OBSERVING" }, (response) => {
-        console.log(response?.status); // Logs "Observing started"
-      });
-    } else {
-      chrome.runtime.sendMessage({ message: "STOP_OBSERVING" }, (response) => {
-        console.log(response?.status); // Logs "Observing stopped"
-      });
-    }
+    chrome.runtime.sendMessage(
+      { message: "CHECK_INSPECTING_STATE" },
+      (response) => {
+        setIsInspecting(response.isInspecting);
+      },
+    );
+  }, []);
 
-    // Listener para receber propriedades de fonte
-    const handleFontPropertiesMessage = (message: FontMessage) => {
-      if (message.message === "font_properties") {
-        setFontProperties(message.data);
-      }
-    };
+  const startInspection = () => {
+    chrome.runtime.sendMessage({ message: "START_OBSERVING" }, (_response) => {
+      setIsInspecting(true);
+    });
+  };
 
-    chrome.runtime.onMessage.addListener(handleFontPropertiesMessage);
-
-    // Limpeza ao desmontar o componente
-    return () => {
-      chrome.runtime.onMessage.removeListener(handleFontPropertiesMessage);
-    };
-  }, [isInspecting]);
+  const stopInspection = () => {
+    chrome.runtime.sendMessage({ message: "STOP_OBSERVING" }, (_response) => {
+      setIsInspecting(false);
+    });
+  };
 
   return (
     <div className="p-4">
@@ -81,36 +51,12 @@ function App() {
       ) : (
         <p>No fonts found</p>
       )}
-      {fontProperties.elementText ? (
-        <div className="space-y-2 mt-4">
-          <p>
-            <strong>Font Family:</strong> {fontProperties.fontFamily}
-          </p>
-          <p>
-            <strong>Font Size:</strong> {fontProperties.fontSize}
-          </p>
-          <p>
-            <strong>Font Weight:</strong> {fontProperties.fontWeight}
-          </p>
-          <p>
-            <strong>Line Height:</strong> {fontProperties.lineHeight}
-          </p>
-          <p>
-            <strong>Color:</strong> {fontProperties.color}
-          </p>
-          <p>
-            <strong>Text:</strong> {fontProperties.elementText}
-          </p>
-        </div>
+
+      {isInspecting ? (
+        <button onClick={stopInspection}>Stop Inspection</button>
       ) : (
-        <p>Hover over text to see font properties</p>
+        <button onClick={startInspection}>Start Inspection</button>
       )}
-      <button
-        className="mt-4 p-2 bg-blue-500 text-white rounded"
-        onClick={() => setIsInspecting((prev) => !prev)}
-      >
-        {isInspecting ? "Stop Inspection" : "Inspect Text"}
-      </button>
     </div>
   );
 }
